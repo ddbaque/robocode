@@ -1,7 +1,6 @@
 package timidinrobot;
 
 import java.util.Random;
-import robocode.BulletHitEvent;
 import robocode.HitRobotEvent;
 import robocode.HitWallEvent;
 import robocode.ScannedRobotEvent;
@@ -12,8 +11,8 @@ public class MoveToCorner extends State {
   private Random random = new Random();
   private double angleOffset = 20; // Default angle offset
 
-  public MoveToCorner(TimidinRobot rob) {
-    super(rob);
+  public MoveToCorner(TimidinRobot r) {
+    super(r);
   }
 
   @Override
@@ -33,9 +32,6 @@ public class MoveToCorner extends State {
     }
     robot.execute();
   }
-
-  @Override
-  public void onScannedRobot(ScannedRobotEvent e) {}
 
   @Override
   public void onHitRobot(HitRobotEvent e) {
@@ -149,8 +145,8 @@ public class MoveToCorner extends State {
     }
   }
 
+
   @Override
-  public void onBulletHit(BulletHitEvent event) {
-    // Handle the event when the robot's bullet hits another robot
-  }
+  public void onScannedRobot(ScannedRobotEvent e) {}
+
 }

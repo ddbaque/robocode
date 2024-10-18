@@ -1,14 +1,13 @@
 package timidinrobot;
 
 import robocode.AdvancedRobot;
-import robocode.BulletHitEvent;
 import robocode.HitRobotEvent;
 import robocode.HitWallEvent;
 import robocode.ScannedRobotEvent;
 
 public class TimidinRobot extends AdvancedRobot {
 
-  private State e;
+  private State s;
 
   ScannedRobotEvent lastScannedRobot;
   double targetX;
@@ -23,32 +22,27 @@ public class TimidinRobot extends AdvancedRobot {
     setState(new Detection(this));
 
     while (true) {
-      e.run();
+      s.run();
     }
   }
 
   @Override
-  public void onScannedRobot(ScannedRobotEvent event) {
-    e.onScannedRobot(event);
+  public void onScannedRobot(ScannedRobotEvent e) {
+    s.onScannedRobot(e);
   }
 
   @Override
-  public void onHitRobot(HitRobotEvent event) {
-    e.onHitRobot(event);
+  public void onHitRobot(HitRobotEvent e) {
+    s.onHitRobot(e);
   }
 
   @Override
-  public void onHitWall(HitWallEvent event) {
-    e.onHitWall(event);
+  public void onHitWall(HitWallEvent e) {
+    s.onHitWall(e);
   }
 
-  @Override
-  public void onBulletHit(BulletHitEvent event) {
-    e.onBulletHit(event);
-  }
-
-  public void setState(State es) {
-    e = es;
+  public void setState(State state) {
+    s = state;
   }
 
   public double normalizeBearing(double angle) {

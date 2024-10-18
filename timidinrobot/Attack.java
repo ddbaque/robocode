@@ -1,6 +1,5 @@
 package timidinrobot;
 
-import robocode.BulletHitEvent;
 import robocode.HitRobotEvent;
 import robocode.HitWallEvent;
 import robocode.ScannedRobotEvent;
@@ -27,6 +26,14 @@ public class Attack extends State {
     aimAndFire(e);
   }
 
+  private void aimAndFire(ScannedRobotEvent e) {
+    double gunTurnAngle = robot.getHeading() + e.getBearing() - robot.getGunHeading();
+    robot.turnGunRight(robot.normalizeBearing(gunTurnAngle));
+
+    double firePower = Math.min(400 / e.getDistance(), 3);
+    robot.fire(firePower);
+  }
+
   @Override
   public void onHitRobot(HitRobotEvent event) {
     // Handle the event when the robot hits another robot
@@ -36,17 +43,5 @@ public class Attack extends State {
   public void onHitWall(HitWallEvent event) {
     // Handle the event when the robot hits a wall
   }
-
-  @Override
-  public void onBulletHit(BulletHitEvent event) {
-    // Handle the event when the robot's bullet hits another robot
-  }
-
-  private void aimAndFire(ScannedRobotEvent e) {
-    double gunTurnAngle = robot.getHeading() + e.getBearing() - robot.getGunHeading();
-    robot.turnGunRight(robot.normalizeBearing(gunTurnAngle));
-
-    double firePower = Math.min(400 / e.getDistance(), 3);
-    robot.fire(firePower);
-  }
+  
 }

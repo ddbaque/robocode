@@ -1,14 +1,13 @@
 package timidinrobot;
 
-import robocode.BulletHitEvent;
 import robocode.HitRobotEvent;
 import robocode.HitWallEvent;
 import robocode.ScannedRobotEvent;
 
 public class Detection extends State {
 
-  public Detection(TimidinRobot rob) {
-    super(rob);
+  public Detection(TimidinRobot r) {
+    super(r);
   }
 
   @Override
@@ -21,21 +20,6 @@ public class Detection extends State {
   public void onScannedRobot(ScannedRobotEvent e) {
     calculateFurthestCorner(e);
     robot.setState(new MoveToCorner(robot));
-  }
-
-  @Override
-  public void onHitRobot(HitRobotEvent event) {
-    // Handle the event when the robot hits another robot
-  }
-
-  @Override
-  public void onHitWall(HitWallEvent event) {
-    // Handle the event when the robot hits a wall
-  }
-
-  @Override
-  public void onBulletHit(BulletHitEvent event) {
-    // Handle the event when the robot's bullet hits another robot
   }
 
   private void calculateFurthestCorner(ScannedRobotEvent e) {
@@ -68,5 +52,15 @@ public class Detection extends State {
         robot.targetY = cornersY[i];
       }
     }
+  }
+
+  @Override
+  public void onHitRobot(HitRobotEvent event) {
+    // Handle the event when the robot hits another robot
+  }
+
+  @Override
+  public void onHitWall(HitWallEvent event) {
+    // Handle the event when the robot hits a wall
   }
 }

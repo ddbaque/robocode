@@ -8,17 +8,15 @@ import robocode.ScannedRobotEvent;
 public abstract class State {
   public TimidinRobot robot;
 
-  public State(TimidinRobot rob) {
-    robot = rob;
+  public State(TimidinRobot r) {
+    robot = r;
   }
 
   abstract void run();
 
-  abstract void onScannedRobot(ScannedRobotEvent event);
+  abstract void onScannedRobot(ScannedRobotEvent e);
 
-  abstract void onHitRobot(HitRobotEvent event);
+  abstract void onHitRobot(HitRobotEvent e);
 
-  abstract void onHitWall(HitWallEvent event);
-
-  abstract void onBulletHit(BulletHitEvent event);
+  abstract void onHitWall(HitWallEvent e);
 }
