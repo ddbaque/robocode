@@ -11,7 +11,7 @@ import java.util.Random;
 public class Estat1 extends Estat {
 
     private Random random = new Random();
-    private double angleOffset = 45; // Default angle offset
+    private double angleOffset = 20; // Default angle offset
     public Estat1(TimidinRobot rob) {
 
         super(rob);
