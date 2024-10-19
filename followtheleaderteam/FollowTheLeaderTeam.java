@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import robocode.*;
-import robocode.util.Utils;
 
 public class FollowTheLeaderTeam extends TeamRobot {
   private static final Point2D.Double ORIGIN = new Point2D.Double(0, 0);
@@ -29,7 +28,6 @@ public class FollowTheLeaderTeam extends TeamRobot {
     // Comportamiento continuo
     while (true) {
       state.run();
-      execute();
     }
   }
 
@@ -39,33 +37,6 @@ public class FollowTheLeaderTeam extends TeamRobot {
     } else {
       state = new FollowerState(this);
     }
-  }
-
-  // Método para mover al robot a una posición objetivo manteniendo una distancia
-  public void goTo(double x, double y, double offset) {
-    double dx = x - getX();
-    double dy = y - getY();
-    double distance = Point2D.distance(getX(), getY(), x, y);
-
-    // Moverse solo si la distancia es mayor al offset
-    if (distance > offset) {
-      double angleToTarget = Math.atan2(dy, dx);
-      double targetAngle = Utils.normalRelativeAngle(angleToTarget - getHeadingRadians());
-
-      setTurnRightRadians(targetAngle);
-      setAhead(distance - offset);
-    }
-  }
-
-  // Sobrecarga del método goTo() para el líder (sin offset)
-  public void goTo(double x, double y) {
-    double dx = x - getX();
-    double dy = y - getY();
-    double angleToTarget = Math.atan2(dy, dx);
-    double targetAngle = Utils.normalRelativeAngle(angleToTarget - getHeadingRadians());
-
-    setTurnRightRadians(targetAngle);
-    setAhead(Point2D.distance(getX(), getY(), x, y));
   }
 
   public void onMessageReceived(MessageEvent e) {
@@ -113,6 +84,13 @@ public class FollowTheLeaderTeam extends TeamRobot {
       teamMembers.get(i).previous = (i == 0) ? null : teamMembers.get(i - 1);
       if (teamMembers.get(i).name.equals(getName())) {
         myRole = teamMembers.get(i);
+
+        // Verificar si este robot es el nuevo líder
+        if (myRole == leader) {
+          state = new LeaderState(this); // Cambiar el estado a líder si soy el nuevo líder
+        } else {
+          state = new FollowerState(this); // Asegurarse de que otros robots sean seguidores
+        }
       }
     }
   }
@@ -120,11 +98,14 @@ public class FollowTheLeaderTeam extends TeamRobot {
   public void onRobotDeath(RobotDeathEvent e) {
     // Recalcular la jerarquía cuando un robot muere
     teamMembers.removeIf(member -> member.name.equals(e.getName()));
-    updateTeamHierarchy(null);
+    updateTeamHierarchy(null); // Recalcular la jerarquía después de una muerte
 
     // Asegurar que el nuevo líder es asignado correctamente
     if (teamMembers.size() > 0) {
       leader = teamMembers.get(0); // El nuevo líder es el siguiente en la lista
+      if (leader.name.equals(getName())) {
+        state = new LeaderState(this); // Cambiar a LeaderState si este robot es el nuevo líder
+      }
     }
   }
 
@@ -146,5 +127,11 @@ public class FollowTheLeaderTeam extends TeamRobot {
       this.name = name;
       this.position = position;
     }
+  }
+
+  public double normalizeBearing(double angle) {
+    while (angle > 180) angle -= 360;
+    while (angle < -180) angle += 360;
+    return angle;
   }
 }

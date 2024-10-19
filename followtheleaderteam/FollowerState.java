@@ -1,7 +1,7 @@
 package followtheleaderteam;
 
-import robocode.*;
 import java.awt.geom.Point2D;
+import robocode.*;
 
 public class FollowerState implements State {
   private FollowTheLeaderTeam robot;
@@ -13,14 +13,26 @@ public class FollowerState implements State {
   @Override
   public void run() {
     followHierarchy();
+    robot.execute();
   }
 
   private void followHierarchy() {
     if (robot.myRole.previous != null) {
       Point2D.Double target = robot.myRole.previous.position;
-      double distanceToTarget = 100; // Distancia de "seguimiento"
-      robot.goTo(target.getX(), target.getY(), distanceToTarget);
     }
+  }
+
+  @Override
+  public void onScannedRobot(ScannedRobotEvent e) {}
+
+  @Override
+  public void onHitRobot(HitRobotEvent event) {
+    // Manejar cuando el robot golpea a otro robot (se puede añadir lógica adicional aquí)
+  }
+
+  @Override
+  public void onHitWall(HitWallEvent event) {
+    // Manejar cuando el robot golpea una pared (se puede añadir lógica adicional aquí)
   }
 
   @Override
