@@ -1,47 +1,49 @@
 package timidinrobot;
 
-import robocode.HitRobotEvent;
-import robocode.HitWallEvent;
-import robocode.ScannedRobotEvent;
+import robocode.*;
 
-// Move to corneer
-public class Attack extends State {
+public class Attack implements State {
 
-  public Attack(TimidinRobot rob) {
-    super(rob);
+  private TimidinRobot robot;
+
+  public Attack(TimidinRobot timidinRobot) {
+    this.robot = timidinRobot;
   }
 
   @Override
   public void run() {
-    robot.turnRadarRight(360);
+    // Usar setTurnRadarRight para un giro de radar no bloqueante
+    robot.setTurnRadarRight(360);
     if (robot.lastScannedRobot != null) {
-      aimAndFire(robot.lastScannedRobot);
+      aimAndFire(robot.lastScannedRobot);  // Disparar si tenemos un robot escaneado
     }
-    robot.execute();
+    robot.execute();  // Ejecutar todos los comandos no bloqueantes
   }
 
   @Override
   public void onScannedRobot(ScannedRobotEvent e) {
+    // Al escanear un robot, almacenar la información y atacar
     robot.lastScannedRobot = e;
     aimAndFire(e);
   }
 
   private void aimAndFire(ScannedRobotEvent e) {
+    // Calcular el ángulo de giro para apuntar el cañón hacia el robot enemigo
     double gunTurnAngle = robot.getHeading() + e.getBearing() - robot.getGunHeading();
-    robot.turnGunRight(robot.normalizeBearing(gunTurnAngle));
+    robot.setTurnGunRight(robot.normalizeBearing(gunTurnAngle));  // Usar setTurnGunRight para giro no bloqueante
 
+    // Calcular la potencia de disparo en función de la distancia al enemigo
     double firePower = Math.min(400 / e.getDistance(), 3);
-    robot.fire(firePower);
+    robot.fire(firePower);  // Disparar con la potencia calculada
   }
 
   @Override
-  public void onHitRobot(HitRobotEvent event) {
-    // Handle the event when the robot hits another robot
+  public void onHitRobot(HitRobotEvent e) {
+    // Manejar cuando el robot golpea a otro robot (puedes añadir lógica aquí)
   }
 
   @Override
-  public void onHitWall(HitWallEvent event) {
-    // Handle the event when the robot hits a wall
+  public void onHitWall(HitWallEvent e) {
+    // Manejar cuando el robot golpea una pared (puedes añadir lógica aquí)
   }
-  
 }

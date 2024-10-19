@@ -1,22 +1,14 @@
 package timidinrobot;
 
-import robocode.BulletHitEvent;
-import robocode.HitRobotEvent;
-import robocode.HitWallEvent;
-import robocode.ScannedRobotEvent;
+import robocode.*;
 
-public abstract class State {
-  public TimidinRobot robot;
+public interface State {
+  
+  void run();
 
-  public State(TimidinRobot r) {
-    robot = r;
-  }
+  void onScannedRobot(ScannedRobotEvent e);
 
-  abstract void run();
+  void onHitRobot(HitRobotEvent e);
 
-  abstract void onScannedRobot(ScannedRobotEvent e);
-
-  abstract void onHitRobot(HitRobotEvent e);
-
-  abstract void onHitWall(HitWallEvent e);
+  void onHitWall(HitWallEvent e);
 }

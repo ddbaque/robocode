@@ -1,152 +1,168 @@
 package timidinrobot;
 
 import java.util.Random;
-import robocode.HitRobotEvent;
-import robocode.HitWallEvent;
-import robocode.ScannedRobotEvent;
+import robocode.*;
 
-// Move to corneer
-public class MoveToCorner extends State {
+public class MoveToCorner implements State {
 
+  private TimidinRobot robot;
   private Random random = new Random();
-  private double angleOffset = 20; // Default angle offset
+  private double angleOffset = 40; // Offset de ángulo por defecto
+  private double dangerThreshold = 100; // Umbral de distancia para prever choques
+  private double wallBuffer = 40; // Distancia mínima a las paredes
 
-  public MoveToCorner(TimidinRobot r) {
-    super(r);
+  public MoveToCorner(TimidinRobot timidinRobot) {
+    this.robot = timidinRobot;
   }
 
   @Override
   public void run() {
     double dx = robot.targetX - robot.getX();
     double dy = robot.targetY - robot.getY();
+    double distanceToTarget = Math.hypot(dx, dy);
     double angleToTarget = Math.toDegrees(Math.atan2(dx, dy));
     double turnAngle = robot.normalizeBearing(angleToTarget - robot.getHeading());
 
-    robot.turnRight(turnAngle);
-    robot.setTurnRadarRight(robot.normalizeBearing(angleToTarget - robot.getRadarHeading()));
+    // Girar hacia el objetivo
+    robot.setTurnRight(turnAngle);
 
-    robot.ahead(Math.hypot(dx, dy));
+    // Verificar si hay enemigos en la trayectoria
+    if (isEnemyInPath()) {
+      avoidEnemy(); // Evitar al enemigo si está en la trayectoria
+    } else {
+      // Verificar distancia a las paredes
+      avoidWalls();
 
-    if (Math.hypot(dx, dy) < 40) {
-      robot.setState(new Attack(robot));
+      // Mover en línea recta hacia el objetivo
+      robot.setAhead(distanceToTarget);
     }
+
+    if (distanceToTarget < 40) {
+      robot.setState(
+          new Attack(robot)); // Cambiar al estado de ataque si estamos cerca del objetivo
+    }
+
+    // Ejecutar comandos
     robot.execute();
+  }
+
+  private boolean isEnemyInPath() {
+    // Escanea hacia adelante para detectar enemigos dentro de un umbral
+    for (int i = -90; i <= 90; i += 30) { // Escanear en un rango de -90 a 90 grados
+      robot.setTurnRadarRight(30); // Mueve el radar en incrementos de 30 grados
+      if (robot.getOthers() > 0) { // Asumiendo que siempre hay enemigos
+        double enemyBearing = robot.getRadarHeading(); // Obtener la dirección del enemigo
+        if (Math.abs(robot.normalizeBearing(enemyBearing - robot.getHeading())) < 30) {
+          return true; // Hay un enemigo en la trayectoria
+        }
+      }
+    }
+    return false; // No hay enemigos en la trayectoria
+  }
+
+  private void avoidEnemy() {
+    // Ajustar el movimiento para evitar al enemigo
+    double enemyBearing = robot.getRadarHeading(); // Obtener el ángulo hacia el enemigo
+    double turnAngle =
+        enemyBearing > 0 ? -angleOffset : angleOffset; // Girar suavemente lejos del enemigo
+    robot.setTurnRight(turnAngle);
+    robot.setAhead(100); // Mover un poco hacia adelante para separarse
+  }
+
+  private void avoidWalls() {
+    double robotX = robot.getX();
+    double robotY = robot.getY();
+    double battlefieldWidth = robot.getBattleFieldWidth();
+    double battlefieldHeight = robot.getBattleFieldHeight();
+
+    // Calcular la distancia a cada pared
+    double distanceToLeftWall = robotX - wallBuffer;
+    double distanceToRightWall = battlefieldWidth - robotX - wallBuffer;
+    double distanceToTopWall = robotY - wallBuffer;
+    double distanceToBottomWall = battlefieldHeight - robotY - wallBuffer;
+
+    // Ajustar dirección si está demasiado cerca de una pared
+    if (distanceToLeftWall < 0
+        || distanceToRightWall < 0
+        || distanceToTopWall < 0
+        || distanceToBottomWall < 0) {
+      // Si está a punto de chocar, gira en dirección opuesta
+      double angleToTurn =
+          (distanceToLeftWall < 0)
+              ? 90
+              : (distanceToRightWall < 0) ? -90 : (distanceToTopWall < 0) ? 0 : 180;
+      robot.setTurnRight(angleToTurn);
+      robot.setAhead(50); // Mueve hacia adelante para alejarse de la pared
+    }
+  }
+
+  @Override
+  public void onScannedRobot(ScannedRobotEvent e) {
+    // Manejar el evento cuando se escanea otro robot
+    // Podrías almacenar información del enemigo aquí si es necesario
   }
 
   @Override
   public void onHitRobot(HitRobotEvent e) {
-    // Handle the event when the robot hits another robot
-    double dx = robot.targetX - robot.getX();
-    double dy = robot.targetY - robot.getY();
     double enemyBearing = e.getBearing();
+    robot.setBack(50); // Retroceder al chocar con un robot
+
+    // Girar hacia el enemigo para apuntar correctamente
     double gunTurnAngle = robot.getHeading() + enemyBearing - robot.getGunHeading();
-    robot.turnGunRight(robot.normalizeBearing(gunTurnAngle));
-    robot.fire(3);
+    robot.setTurnGunRight(robot.normalizeBearing(gunTurnAngle));
+    robot.fire(3); // Dispara al enemigo
 
-    double gunToRobotHeading = robot.getHeading() - robot.getGunHeading();
-    double angleToTarget = Math.toDegrees(Math.atan2(dx, dy));
-
-    // Calcular el ángulo de giro si giramos a la derecha
-    double turnRightAngle =
-        robot.normalizeBearing(angleToTarget - (robot.getHeading() + angleOffset));
-
-    // Calcular el ángulo de giro si giramos a la izquierda
-    double turnLeftAngle =
-        robot.normalizeBearing(angleToTarget - (robot.getHeading() - angleOffset));
-
-    // Decidir la dirección que minimiza la distancia a la esquina
-    if (Math.abs(turnRightAngle) < Math.abs(turnLeftAngle)) {
-      robot.turnRight(angleOffset); // Girar a la derecha
+    // Decidir en qué dirección girar: izquierda o derecha
+    if (enemyBearing > 0) {
+      robot.setTurnLeft(angleOffset + random.nextInt(45)); // Gira a la izquierda aleatoriamente
     } else {
-      robot.turnLeft(angleOffset); // Girar a la izquierda
+      robot.setTurnRight(angleOffset + random.nextInt(45)); // Gira a la derecha aleatoriamente
     }
 
-    // Retroceder para evitar el choque
-    robot.back(50);
-
-    // NUEVO: Lógica mejorada para decidir la dirección y el ángulo de giro
-    if (e.getBearing() > 0) {
-      robot.turnLeft(
-          angleOffset
-              + random.nextInt(45)); // Girar en una dirección aleatoria entre 45 y 90 grados
-    } else {
-      robot.turnRight(angleOffset + random.nextInt(45));
-    }
-    double tankHeading = robot.getHeading();
-    // Obtener la dirección actual del cañón
-    double gunHeading = robot.getGunHeading();
-    // Calcular el ángulo para girar el cañón hacia la dirección del tanque
-    double angleToTurn = tankHeading - gunHeading;
-    // Girar el cañón hacia el ángulo calculado
-    robot.turnGunRight(robot.normalizeBearing(angleToTurn));
-    // Seguir avanzando/
-
-    robot.ahead(50);
+    robot.execute(); // Ejecutar los comandos
+    robot.ahead(100); // Avanzar para separarse del enemigo
   }
 
   @Override
   public void onHitWall(HitWallEvent event) {
-    // Handle the event when the robot hits a wall
+    // Lógica de choque con la pared (igual que antes)
     double battlefieldWidth = robot.getBattleFieldWidth();
     double battlefieldHeight = robot.getBattleFieldHeight();
-    double dx = robot.targetX - robot.getX();
-    double dy = robot.targetY - robot.getY();
-    if (Math.hypot(dx, dy) > 40) {
 
-      // Retroceder un poco antes de girar
-      robot.back(50);
+    double robotX = robot.getX();
+    double robotY = robot.getY();
 
-      // Generar 5 ángulos aleatorios y comparar distancias a las paredes
-      double[] anglesToTry = new double[5];
-      double[] distances = new double[5];
+    double cornerThreshold = 20; // Ajustar según sea necesario
 
-      // Probar con 5 ángulos aleatorios entre -90 y 90 grados (izquierda y derecha)
-      for (int i = 0; i < 5; i++) {
-        // Generar un ángulo aleatorio entre -90 y 90 grados
-        anglesToTry[i] =
-            -90 + random.nextDouble() * 180; // Gira entre -90 (izquierda) y 90 (derecha)
+    // Verificar si el robot está en una esquina
+    boolean isInCorner =
+        (robotX < cornerThreshold && robotY < cornerThreshold)
+            || // Esquina superior izquierda
+            (robotX < cornerThreshold && robotY > battlefieldHeight - cornerThreshold)
+            || // Esquina inferior izquierda
+            (robotX > battlefieldWidth - cornerThreshold && robotY < cornerThreshold)
+            || // Esquina superior derecha
+            (robotX > battlefieldWidth - cornerThreshold
+                && robotY > battlefieldHeight - cornerThreshold); // Esquina inferior derecha
 
-        // Simular la nueva posición si giramos en ese ángulo y avanzamos
-        double newHeading = robot.normalizeBearing(robot.getHeading() + anglesToTry[i]);
-        double newX =
-            robot.getX() + Math.sin(Math.toRadians(newHeading)) * 50; // Simula moverse 50 unidades
-        double newY = robot.getY() + Math.cos(Math.toRadians(newHeading)) * 50;
-
-        // Calcular la distancia mínima desde la nueva posición a los bordes del campo de batalla
-        double distanceToLeftWall = newX; // Distancia al borde izquierdo (X = 0)
-        double distanceToRightWall = battlefieldWidth - newX; // Distancia al borde derecho
-        double distanceToTopWall = battlefieldHeight - newY; // Distancia al borde superior
-        double distanceToBottomWall = newY; // Distancia al borde inferior (Y = 0)
-
-        // La distancia mínima a las paredes es la menor de las cuatro distancias
-        double minDistanceToWall =
-            Math.min(
-                Math.min(distanceToLeftWall, distanceToRightWall),
-                Math.min(distanceToTopWall, distanceToBottomWall));
-
-        // Guardar la distancia mínima para este ángulo
-        distances[i] = minDistanceToWall;
-      }
-
-      // Encontrar el ángulo que resulte en la mayor distancia a la pared (el más lejos de cualquier
-      // pared)
-      int bestIndex = 0;
-      for (int i = 1; i < 5; i++) {
-        if (distances[i] > distances[bestIndex]) { // Elegir el que maximice la distancia a la pared
-          bestIndex = i;
-        }
-      }
-
-      // Girar hacia el ángulo que maximiza la distancia a las paredes
-      robot.turnRight(anglesToTry[bestIndex]);
-
-      // Avanzar después de girar
-      robot.ahead(50);
+    if (isInCorner) {
+      robot.setTurnRight(0); // Asegúrate de que no esté girando
+      robot.setAhead(0); // No moverse
+      return; // Salir del método
     }
+
+    // Lógica de giro por impacto
+    double angleToTurn;
+    double bearing = event.getBearing();
+
+    if (bearing > 0) {
+      angleToTurn = -90; // Girar a la izquierda
+    } else {
+      angleToTurn = 90; // Girar a la derecha
+    }
+
+    robot.setTurnRight(angleToTurn);
+    robot.setAhead(100); // Avanzar un poco después de girar
+    robot.execute(); // Ejecutar los comandos
   }
-
-
-  @Override
-  public void onScannedRobot(ScannedRobotEvent e) {}
-
 }

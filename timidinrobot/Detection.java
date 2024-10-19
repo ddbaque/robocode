@@ -1,29 +1,31 @@
 package timidinrobot;
 
-import robocode.HitRobotEvent;
-import robocode.HitWallEvent;
-import robocode.ScannedRobotEvent;
+import robocode.*;
 
-public class Detection extends State {
+public class Detection implements State {
+  
+  private TimidinRobot robot;
 
-  public Detection(TimidinRobot r) {
-    super(r);
+  public Detection(TimidinRobot timidinRobot) {
+    this.robot = timidinRobot;
   }
 
   @Override
   public void run() {
+    // Usar setTurnRadarRight para girar el radar de manera no bloqueante
     robot.setTurnRadarRight(360);
-    robot.execute();
+    robot.execute();  // Ejecutar los comandos no bloqueantes
   }
 
   @Override
   public void onScannedRobot(ScannedRobotEvent e) {
+    // Calcular la esquina más lejana al detectar un robot
     calculateFurthestCorner(e);
-    robot.setState(new MoveToCorner(robot));
+    robot.setState(new MoveToCorner(robot));  // Cambiar a estado MoveToCorner
   }
 
   private void calculateFurthestCorner(ScannedRobotEvent e) {
-    // Obtener la posición del robot enemigo en el campo de batalla
+    // Calcular las coordenadas del enemigo en función de su distancia y ángulo
     double enemyX =
         robot.getX()
             + e.getDistance() * Math.sin(Math.toRadians(robot.getHeading() + e.getBearing()));
@@ -31,36 +33,33 @@ public class Detection extends State {
         robot.getY()
             + e.getDistance() * Math.cos(Math.toRadians(robot.getHeading() + e.getBearing()));
 
-    // Dimensiones del campo de batalla
     double battlefieldWidth = robot.getBattleFieldWidth();
     double battlefieldHeight = robot.getBattleFieldHeight();
-
-    // Desplazamiento interno hacia dentro de las esquinas
     double offset = 15;
 
-    // Definimos las coordenadas de las esquinas ajustadas con el desplazamiento
+    // Coordenadas de las cuatro esquinas del campo de batalla con un pequeño margen de seguridad
     double[] cornersX = {offset, offset, battlefieldWidth - offset, battlefieldWidth - offset};
     double[] cornersY = {offset, battlefieldHeight - offset, offset, battlefieldHeight - offset};
 
-    // Buscar la esquina más alejada del enemigo
     double maxDistance = -1;
+    // Buscar la esquina más lejana al enemigo
     for (int i = 0; i < cornersX.length; i++) {
       double distance = Math.hypot(enemyX - cornersX[i], enemyY - cornersY[i]);
       if (distance > maxDistance) {
         maxDistance = distance;
-        robot.targetX = cornersX[i];
-        robot.targetY = cornersY[i];
+        robot.targetX = cornersX[i];  // Actualizar la esquina objetivo X
+        robot.targetY = cornersY[i];  // Actualizar la esquina objetivo Y
       }
     }
   }
 
   @Override
   public void onHitRobot(HitRobotEvent event) {
-    // Handle the event when the robot hits another robot
+    // Manejar cuando el robot golpea a otro robot (se puede añadir lógica adicional aquí)
   }
 
   @Override
   public void onHitWall(HitWallEvent event) {
-    // Handle the event when the robot hits a wall
+    // Manejar cuando el robot golpea una pared (se puede añadir lógica adicional aquí)
   }
 }

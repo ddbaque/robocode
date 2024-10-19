@@ -1,53 +1,50 @@
 package timidinrobot;
 
-import robocode.AdvancedRobot;
-import robocode.HitRobotEvent;
-import robocode.HitWallEvent;
-import robocode.ScannedRobotEvent;
+import java.awt.Color; // Importar para usar la clase Color
+import robocode.*;
 
 public class TimidinRobot extends AdvancedRobot {
 
-  private State s;
+  private State state;
 
   ScannedRobotEvent lastScannedRobot;
   double targetX;
   double targetY;
 
-  @Override
-  public void run() {
-    setAdjustGunForRobotTurn(false);
-    setAdjustRadarForRobotTurn(false);
-    setAdjustRadarForGunTurn(false);
-
-    setState(new Detection(this));
-
-    while (true) {
-      s.run();
-    }
-  }
-
-  @Override
-  public void onScannedRobot(ScannedRobotEvent e) {
-    s.onScannedRobot(e);
-  }
-
-  @Override
-  public void onHitRobot(HitRobotEvent e) {
-    s.onHitRobot(e);
-  }
-
-  @Override
-  public void onHitWall(HitWallEvent e) {
-    s.onHitWall(e);
-  }
-
-  public void setState(State state) {
-    s = state;
+  public void setState(State newState) {
+    state = newState;
   }
 
   public double normalizeBearing(double angle) {
     while (angle > 180) angle -= 360;
     while (angle < -180) angle += 360;
     return angle;
+  }
+
+  @Override
+  public void run() {
+    setBodyColor(Color.black); // Color del cuerpo
+    setGunColor(Color.red); // Color del cañón
+    setRadarColor(Color.black);
+    setState(new Detection(this));
+
+    while (true) {
+      state.run();
+    }
+  }
+
+  @Override
+  public void onScannedRobot(ScannedRobotEvent e) {
+    state.onScannedRobot(e);
+  }
+
+  @Override
+  public void onHitRobot(HitRobotEvent e) {
+    state.onHitRobot(e);
+  }
+
+  @Override
+  public void onHitWall(HitWallEvent e) {
+    state.onHitWall(e);
   }
 }
