@@ -1,3 +1,4 @@
+
 package followtheleaderteam;
 
 import java.awt.Color;
@@ -43,24 +44,23 @@ public class FollowTheLeaderTeam extends TeamRobot {
     if (e.getMessage() instanceof HierarchyMember) {
       HierarchyMember newMember = (HierarchyMember) e.getMessage();
       updateTeamHierarchy(newMember);
-      updateState(); // Actualizar el estado después de recibir mensajes
+      updateState();
+    } else if (e.getMessage().equals("REVERSE_HIERARCHY")) {
+      reverseHierarchy(); // Invertir jerarquía cuando se reciba el mensaje
     }
   }
 
   private void reportPosition() {
-    // Informar mi posición a los demás robots del equipo
     HierarchyMember me = new HierarchyMember(getName(), new Point2D.Double(getX(), getY()));
     try {
       broadcastMessage(me);
     } catch (IOException ex) {
-      // Manejo de la excepción (puedes loguear el error o simplemente ignorarlo)
       out.println("Error al enviar mensaje: " + ex.getMessage());
     }
     updateTeamHierarchy(me);
   }
 
   private void updateTeamHierarchy(HierarchyMember member) {
-    // Actualizar la lista de miembros y recalcular la jerarquía
     if (member != null) {
       boolean exists = false;
       for (HierarchyMember m : teamMembers) {
@@ -75,7 +75,7 @@ public class FollowTheLeaderTeam extends TeamRobot {
       }
     }
 
-    // Ordenar los miembros por distancia al origen (0, 0)
+    // Ordenar los miembros por distancia al origen
     Collections.sort(teamMembers, Comparator.comparingDouble(m -> m.position.distance(ORIGIN)));
 
     // Asignar el líder
@@ -84,48 +84,42 @@ public class FollowTheLeaderTeam extends TeamRobot {
       teamMembers.get(i).previous = (i == 0) ? null : teamMembers.get(i - 1);
       if (teamMembers.get(i).name.equals(getName())) {
         myRole = teamMembers.get(i);
-
-        // Verificar si este robot es el nuevo líder
-        if (myRole == leader) {
-          state = new LeaderState(this); // Cambiar el estado a líder si soy el nuevo líder
-        } else {
-          state = new FollowerState(this); // Asegurarse de que otros robots sean seguidores
-        }
+        updateState();
       }
     }
   }
 
-  public void onRobotDeath(RobotDeathEvent e) {
-    // Recalcular la jerarquía cuando un robot muere
-    teamMembers.removeIf(member -> member.name.equals(e.getName()));
-    updateTeamHierarchy(null); // Recalcular la jerarquía después de una muerte
+  public void reverseHierarchy() {
+    // Invertir la jerarquía
+    Collections.reverse(teamMembers);
 
-    // Asegurar que el nuevo líder es asignado correctamente
-    if (teamMembers.size() > 0) {
-      leader = teamMembers.get(0); // El nuevo líder es el siguiente en la lista
-      if (leader.name.equals(getName())) {
-        state = new LeaderState(this); // Cambiar a LeaderState si este robot es el nuevo líder
+    // Asignar el nuevo líder
+    leader = teamMembers.get(0);
+    for (int i = 0; i < teamMembers.size(); i++) {
+      teamMembers.get(i).previous = (i == 0) ? null : teamMembers.get(i - 1);
+      if (teamMembers.get(i).name.equals(getName())) {
+        myRole = teamMembers.get(i);
+        updateState(); // Actualizar el estado después de invertir la jerarquía
       }
+    }
+
+    out.println("Jerarquía invertida. Nuevo líder: " + leader.name);
+  }
+
+  public void onRobotDeath(RobotDeathEvent e) {
+    teamMembers.removeIf(member -> member.name.equals(e.getName()));
+    updateTeamHierarchy(null);
+    if (teamMembers.size() > 0) {
+      leader = teamMembers.get(0);
+      updateState();
     }
   }
 
   @Override
   public void onPaint(Graphics2D g) {
-    // Dibujar un círculo alrededor del líder
     if (myRole == leader) {
-      g.setColor(Color.RED); // Cambia el color según lo que prefieras
-      g.drawOval((int) (getX() - 50), (int) (getY() - 50), 100, 100); // Círculo con radio de 50
-    }
-  }
-
-  static class HierarchyMember implements java.io.Serializable {
-    String name;
-    Point2D.Double position;
-    HierarchyMember previous; // El robot justo por encima en la jerarquía
-
-    HierarchyMember(String name, Point2D.Double position) {
-      this.name = name;
-      this.position = position;
+      g.setColor(Color.RED);
+      g.drawOval((int) (getX() - 50), (int) (getY() - 50), 100, 100);
     }
   }
 
@@ -133,5 +127,16 @@ public class FollowTheLeaderTeam extends TeamRobot {
     while (angle > 180) angle -= 360;
     while (angle < -180) angle += 360;
     return angle;
+  }
+
+  static class HierarchyMember implements java.io.Serializable {
+    String name;
+    Point2D.Double position;
+    HierarchyMember previous;
+
+    HierarchyMember(String name, Point2D.Double position) {
+      this.name = name;
+      this.position = position;
+    }
   }
 }

@@ -1,11 +1,13 @@
 package followtheleaderteam;
 
+import java.io.IOException;
 import robocode.*;
 
 public class LeaderState implements State {
   private FollowTheLeaderTeam robot;
   private double marginX;
   private double marginY;
+  private long startTime; // Para controlar el tiempo de 15 segundos
 
   public LeaderState(FollowTheLeaderTeam robot) {
     this.robot = robot;
@@ -15,10 +17,27 @@ public class LeaderState implements State {
     double battlefieldHeight = robot.getBattleFieldHeight();
     this.marginX = battlefieldWidth * 0.1;
     this.marginY = battlefieldHeight * 0.1;
+
+    // Guardar el tiempo inicial en milisegundos
+    this.startTime = System.currentTimeMillis();
   }
 
   @Override
   public void run() {
+    // Comprobar si han pasado 15 segundos (15000 milisegundos)
+    if (System.currentTimeMillis() - startTime > 20000) {
+      try {
+        robot.broadcastMessage("REVERSE_HIERARCHY"); // Mandar la señal de reversión
+      } catch (IOException e) {
+        robot.out.println("Error al enviar mensaje de reversión: " + e.getMessage());
+      }
+
+      robot.out.println("soy un imposrtor");
+      // Invertir también la jerarquía del propio líder
+      robot.reverseHierarchy();
+      return; // Salir del estado actual
+    }
+
     // Definir la posición objetivo con un margen de 10%
     double targetX = marginX;
     double targetY = marginY;
@@ -50,12 +69,11 @@ public class LeaderState implements State {
   @Override
   public void onHitRobot(HitRobotEvent event) {
     robot.back(4000);
-    // Manejar cuando el robot golpea a otro robot (se puede añadir lógica adicional aquí)
   }
 
   @Override
   public void onHitWall(HitWallEvent event) {
-    // Manejar cuando el robot golpea una pared (se puede añadir lógica adicional aquí)
+    // Manejar cuando el robot golpea una pared
   }
 
   @Override
