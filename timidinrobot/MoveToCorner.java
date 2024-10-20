@@ -5,11 +5,11 @@ import robocode.*;
 
 public class MoveToCorner implements State {
 
-  private TimidinRobot robot;
-  private int lastHitRobotId = -1; // Para llevar el seguimiento del último robot golpeado
-  private int hitRobotCount = 0; // Contador de colisiones con el mismo robot
+  private TimidinRobot robot; // referència al TimidinRobot
+  private int lastHitRobotId = -1; // Per a portar el seguiment de l'últim robot colpejat
+  private int hitRobotCount = 0; // Contador de col·lisions amb el mateix robot
   private Random random = new Random();
-  private double angleOffset = 40; // Offset de ángulo por defecto
+  private double angleOffset = 40; // Offset d'angle per defecte
 
   public MoveToCorner(TimidinRobot timidinRobot) {
     this.robot = timidinRobot;
@@ -17,136 +17,135 @@ public class MoveToCorner implements State {
 
   @Override
   public void run() {
+    // Calcula la direcció cap a la cantonada objectiu
     double dx = robot.targetX - robot.getX();
     double dy = robot.targetY - robot.getY();
+    // Calcula l'angle que ha de girar el robot per posicionar-se de cara a la cantonada objectiu
     double angleToTarget = Math.toDegrees(Math.atan2(dx, dy));
     double turnAngle = robot.normalizeBearing(angleToTarget - robot.getHeading());
 
-    // Usar setTurnRight para giros no bloqueantes
+    // Gira el robot per posicionar-se de cara a la cantonada objectiu
     robot.setTurnRight(turnAngle);
     robot.setTurnRadarRight(robot.normalizeBearing(angleToTarget - robot.getRadarHeading()));
 
-    // Usar setAhead para movimiento no bloqueante
+    // Mou el robot en línia recta cap a la cantonada objectiu
     robot.setAhead(Math.hypot(dx, dy));
 
+    // Si el robot arriba a la cantonada objectiu canvia a l'estat 2: Attack
     if (Math.hypot(dx, dy) < 40) {
       robot.setState(new Attack(robot));
     }
-
-    // Ejecutar comandos
-    robot.execute();
-  }
-
-  @Override
-  public void onScannedRobot(ScannedRobotEvent e) {
-    // Manejar cuando se escanea otro robot
+ 
+    robot.execute(); // Executar les comandes
   }
 
   @Override
   public void onHitRobot(HitRobotEvent e) {
+    // Càlcul de la distància del robot a la cantonada objectiu
     double dx = robot.targetX - robot.getX();
     double dy = robot.targetY - robot.getY();
+
     double enemyBearing = e.getBearing();
-    robot.setBack(50);
+    robot.setBack(50); // Retrocedeix una mica per a separar-se de l'enemic
 
-    // Primero, giramos hacia el enemigo para apuntar correctamente
+    // Càlcul de l'angle que ha de girar canó per disparar a l'enemic amb el que hem col·lisionat
     double gunTurnAngle = robot.getHeading() + enemyBearing - robot.getGunHeading();
+    // Gira el canó
     robot.setTurnGunRight(robot.normalizeBearing(gunTurnAngle));
-    robot.fire(3); // Dispara al enemigo
+    robot.fire(3); // Dispara a l'enemic
 
-    // Retrocedemos un poco para separarnos del enemigo
-
-    // Chequear si es el mismo robot que se ha chocado antes
+    // Comprovar si és el mateix robot que s'ha xocat abans
     if (e.getName().equals(robot.getOthers())) {
       hitRobotCount++;
     } else {
-      // Reiniciar el contador si es un robot diferente
+      // Reinicia el contador si és un robot diferent
       lastHitRobotId = e.getName().hashCode();
-      hitRobotCount = 1; // Reiniciar el conteo si es un robot nuevo
+      hitRobotCount = 1; 
     }
 
-    // Si el robot ha chocado con el mismo más de una vez, hacer un giro brusco
+    // Si el robot ha col·lisionat amb el mateix enemic més d'un cop, fa un gir brusc
     if (hitRobotCount > 1) {
-      robot.setTurnRight(180); // Girar 180 grados para escapar
-      robot.setAhead(100); // Avanzar hacia adelante para salir del sitio
-      robot.execute(); // Ejecutar los comandos
-      return; // Salir del método
+      robot.setTurnRight(180); // Girar 180 graus per escapar
+      robot.setAhead(100); // Avançar cap endavant per a sortir del lloc
+      robot.execute(); // Executar les comandes
+      return; // Sortir del mètode
     }
 
-    // Decidir en qué dirección girar: izquierda o derecha
+    // Decidir en quina direcció girar (esquerra o dreta) depenent de la possició relativa de l'enemic (bearing)
     if (enemyBearing > 0) {
-      robot.setTurnLeft(angleOffset + random.nextInt(45)); // Gira a la izquierda aleatoriamente
+      robot.setTurnLeft(angleOffset + random.nextInt(45)); // Gira a l'esquerra amb un angle aleatori
     } else {
-      robot.setTurnRight(angleOffset + random.nextInt(45)); // Gira a la derecha aleatoriamente
+      robot.setTurnRight(angleOffset + random.nextInt(45)); // Gira a la dreta amb un angle aleatori
     }
 
-    // Ejecutar los comandos de movimiento
+    // Executar les comandes de moviment
     robot.execute();
 
-    // Avanzar un poco después de esquivar
-    robot.ahead(100); // Mueve hacia adelante para separarse del enemigo
+    // Avançar una mica dessprés d'esquivar
+    robot.ahead(100); // Es mou cap endavant per a separar-se de l'enemic
   }
 
   @Override
   public void onHitWall(HitWallEvent event) {
-    // Obtener las dimensiones del campo de batalla
+    // Obté la mida del camp
     double battlefieldWidth = robot.getBattleFieldWidth();
     double battlefieldHeight = robot.getBattleFieldHeight();
 
-    // Obtener la posición actual del robot
+    // Obté la possició actual del robot
     double robotX = robot.getX();
     double robotY = robot.getY();
 
-    // Definir un umbral para considerar si el robot está en una esquina
-    double cornerThreshold = 30; // Puedes ajustar este valor según sea necesario
+    // Definir un llindar per a considerar si el robot està en una cantonada
+    double cornerThreshold = 30; 
 
-    // Verificar si el robot está en una esquina
+    // Verificar si el robot està en una cantonada
     boolean isInCorner =
         (robotX < cornerThreshold && robotY < cornerThreshold)
-            || // Esquina superior izquierda
+            || // Cantonada superior esquerra
             (robotX < cornerThreshold && robotY > battlefieldHeight - cornerThreshold)
-            || // Esquina inferior izquierda
+            || // Cantonada inferior esquerra
             (robotX > battlefieldWidth - cornerThreshold && robotY < cornerThreshold)
-            || // Esquina superior derecha
+            || // Cantonada superior dreta
             (robotX > battlefieldWidth - cornerThreshold
-                && robotY > battlefieldHeight - cornerThreshold); // Esquina inferior derecha
+                && robotY > battlefieldHeight - cornerThreshold); // Cantonada inferior dreta
 
     if (isInCorner) {
-      // Si está en la esquina, no hacer nada (quedarse quieto)
-      robot.setTurnRight(0); // Asegúrate de que no esté girando
-      robot.setAhead(0); // No moverse
-      return; // Salir del método para evitar la lógica de giro
+      // Si és a la cantonada, no fer res (quedar-se quiet)
+      robot.setTurnRight(0); // Assegurar  que no està girant
+      robot.setAhead(0); // No moure's
+      return; // Sortir del mètode per a evitar la lògica de gir
     }
 
-    // Determina la dirección del giro en función de la pared impactada
+    // Determina la direcció de gir en funció de la paret impactada
     double angleToTurn;
     double bearing = event.getBearing();
 
     if (bearing > 0) {
-      // Si choca con la pared a la derecha, gira a la izquierda
-      angleToTurn = -90; // Girar a la izquierda
+      // Si xoca amb la paret a la dreta, gira a l'esquerra
+      angleToTurn = -90; 
     } else {
-      // Si choca con la pared a la izquierda, gira a la derecha
-      angleToTurn = 90; // Girar a la derecha
+      // Si xoca amb la paret a l'esquerra, gira a la dreta
+      angleToTurn = 90; 
     }
 
-    // Girar no bloqueante hacia la dirección determinada
+    // Gir no bloquejant cap a la direcció determinada
     robot.turnRight(angleToTurn);
-    robot.ahead(100); // Avanzar un poco después de girar
-    robot.execute(); // Ejecutar los comandos
+    robot.ahead(100); // Avançar una mica després de girar
+    robot.execute(); // Executar les comandes
 
-    // Lógica para salir de una situación atrapada
+    // Lògica per a sortir d'una situació en la que el robot es troba envoltat
     if (isSurrounded()) {
-      robot.turnRight(180); // Girar 180 grados para escapar
-      robot.setAhead(100); // Avanzar hacia adelante para salir del sitio
-      robot.execute(); // Ejecutar los comandos
+      robot.turnRight(180); // Girar 180 graus per a escapar
+      robot.setAhead(100); // Avançar cap al davant per a sortir del lloc
+      robot.execute(); // Executar les comandes
     }
   }
 
-  // Método para comprobar si el robot está rodeado
+  //Comprovar si el robot està envoltat
   private boolean isSurrounded() {
-    // Lógica para verificar si el robot está rodeado por paredes y otros robots
-    // Puedes utilizar la posición actual del robot y la cantidad de enemigos visibles
-    return robot.getOthers() > 1; // Por ejemplo, si hay más de un enemigo visible
+    return robot.getOthers() > 1; // si hi ha més d'un enemic visible
   }
+
+  @Override
+  public void onScannedRobot(ScannedRobotEvent e) {}
 }
