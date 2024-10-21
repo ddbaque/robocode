@@ -18,7 +18,7 @@ public class Detection implements State {
   }
 
   @Override
-  public void onScannedRobot(ScannedRobotEvent e) {
+       public void onScannedRobot(ScannedRobotEvent e) {
     // Calcula la cantonada més llunyana al detectar un robot
     calculateFurthestCorner(e);
     robot.setState(new MoveToCorner(robot));  // Canvia a l'estat 1: MoveToCorner

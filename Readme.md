@@ -1,8 +1,50 @@
 # 🤖 Robocode 🤖 
 
+## Índex
+- [⚙️Entorn de Treball ⚙️](#⚙️-entorn-de-treball-⚙️)
+  - [Editor de codi](#editor-de-codi)
+- [😳 TimidínRobot 😳](#😳-timidínrobot-😳)
+     - [Plantejament i organització del codi](#plantejament-i-organització-del-codi)
+     - [Detalls de la implementació](#detalls-de-la-implementació)
+        - [TimidinRobot.java](#timidinrobot.java)
+        - [State.java](#state.java)
+        - [Detection.java](#detection.java)
+        - [MoveToCorner.java](#movetocorner.java)
+        - [Attack.java](#attack.java)
+     - [Explicació dels càlculs](#explicació-dels-càlculs)
+        - [Normalitzar angles](#normalitzar-angles)
+        - [Càlcul de les coordenades de l’enemic](#càlcul-de-les-coordenades-del-contrari)
+        - [Càlcul de la distància de l’enemic a cada cantonada](#càlcul-de-la-distància-del-contrari-a-cada-cantonada)
+        - [Càlcul i normalització de l’angle de gir](#càlcul-i-normalització-angle-de-gir)
+        - [Girar canó cap a l’enemic](#girar-canó-cap-al-contrari)
+        - [Càlcul de la potència del tret](#càlcul-de-la-potència-del-tret)
+        - [Decisió de la direcció de gir basada en enemyBearing](#decisió-de-la-direcció-de-gir-basada-en-enemybearing)
+- [🤝 FollowTheLeaderTeam 🤝](#🤝-followtheleaderteam-🤝)
+
+## ⚙️ Entorn de Treball ⚙️
+
+### Editor de codi
+
+En nuestro equipo decidimos no utilizar el **IDE NetBeans** para programar en Java, ya que no consideramos necesario el uso de un IDE completo para este proyecto. Al tratarse de un entorno en Linux, optamos por editores de código, que eran más que suficientes para nuestras necesidades, **Visual Studio Code** y **NeoVim**. Ambos editores ofrecen flexibilidad y la posibilidad de configurar el entorno de desarrollo a medida.
+
+Para obtener soporte de autocompletado y vinculación con la librería de Robocode, simplemente debíamos dirigirnos al directorio donde habíamos instalado Robocode. En nuestro caso, lo descargamos en `/home/<usuario>/robocode`, y dentro del directorio `robocode/libs/robocode.jar` encontramos el archivo de la librería necesario para proporcionar autocompletado y soporte para Robocode en los editores.
+
+Sin embargo, no pudimos resolver la importación automática de robots mediante el método sugerido en el PowerPoint de Atenea. Para solucionar este inconveniente, creamos un sencillo script llamado **compile_robot.sh**, que se encargaba de compilar el código Java de los robots y copiarlos directamente al directorio de Robocode. Esto nos permitió importar los robots y tenerlos listos para usar en el juego de manera rápida.
+
+
+`compile_robot.sh:`
+``` bash 
+javac -cp $1/libs/robocode.jar $2/*.java
+sudo cp -r $2 $1/robots
+```
+
+Con este enfoque, pudimos compilar y mover nuestros robots a la carpeta `/home/<usuario>/robocode/robots`, logrando que estuvieran listos para ser utilizados en Robocode sin problemas adicionales.
+
+### Gestió del codi
+
 ## 😳 TimidínRobot 😳
 
-### 1. Plantejament i organització del codi
+### Plantejament i organització del codi
 
 El robot **TimidínRobot** s'ha desenvolupat fent servir el patró de màquina d'estats (state design pattern), i això permet organitzar el comportament de Timidín en diferents estats que gestionen els esdeveniments de manera específica. Els estats definits corresponen a les fases proporcionades a l'enunciat.
 
@@ -18,9 +60,9 @@ El codi s’organitza en diferents classes per separar les responsabilitats:
 
 ---
 
-### 2. Detalls de la implementació
+### Detalls de la implementació
 
-#### 2.1. TimidinRobot.java
+#### TimidinRobot.java
 
 - **Atributs:**
     - `state`: representa l'estat actual del robot.
@@ -32,7 +74,7 @@ El codi s’organitza en diferents classes per separar les responsabilitats:
     - `run()`: mètode principal que configura el color del robot, estableix l'estat inicial, i executa el cicle continu on anomena al mètode `run()` de l’estat actual.
     - Mètodes d'esdeveniments  (`onScannedRobot`, `onHitRobot`, `onHitWall`): deleguen el maneig de l'esdeveniment a l'estat actual.
 
-#### 2.2. State.java
+#### State.java
 
 **Mètodes:**
 
@@ -41,7 +83,7 @@ El codi s’organitza en diferents classes per separar les responsabilitats:
 - `onHitRobot(HitRobotEvent e)`: s'executa quan el robot col·lideix amb un altre robot.
 - `onHitWall(HitWallEvent e)`: s'executa quan el robot colpeja una paret.
 
-#### 2.3. Detection.java
+#### Detection.java
 
 - **Atributs:**
     - `robot`: referència al robot per a accedir als seus mètodes i atributs.
@@ -51,7 +93,7 @@ El codi s’organitza en diferents classes per separar les responsabilitats:
     - `calculateFurthestCorner(ScannedRobotEvent e)`: determina quina de les quatre cantonades del camp de batalla està més allunyada del robot enemic detectat.
     - `onHitRobot` y `onHitWall`: no hem implementat accions en aquest estat.
 
-#### 2.4. MoveToCorner.java
+#### MoveToCorner.java
 
 - **Atributs:**
     - `robot`: referència al robot per a accedir als seus mètodes i atributs.
@@ -64,7 +106,7 @@ El codi s’organitza en diferents classes per separar les responsabilitats:
     - `onHitWall(HitWallEvent e)`: realitza ajustos al rumb quan es detecta una col·lisió amb la paret. Inclou lògica per a sortir d'una cantonada si està atrapat.
     - `isSurrounded()`: determina si el robot està envoltat d'enemics, utilitzat per a decidir si realitzar un gir brusc.
 
-#### 2.5. Attack.java
+#### Attack.java
 
 - **Atributs:**
     - `robot`: referència al robot per a accedir als seus mètodes i atributs.
@@ -76,9 +118,9 @@ El codi s’organitza en diferents classes per separar les responsabilitats:
 
 ---
 
-### 3. Explicació dels càlculs
+### Explicació dels càlculs
 
-#### 3.1. Normalitzar angles
+#### Normalitzar angles
 
 La funció `normalizeBearing` (a la classe TimidinRobot.java) serveix per a ajustar un angle perquè estigui dins del rang de -180 a 180 graus amb l’objectiu d’indicar la direcció més curta de gir cap a l'objectiu (ja que tenint en compte els 360 graus es pot arribar als objectius girant tat a l’esquerra com a la dreta, només que una de les opcions és més curta i eficient).
 
@@ -92,7 +134,7 @@ public double normalizeBearing(double angle) {
 
 Per normalitzar l’angle li hem restat 360 graus repetidament fins que ha quedat dins del rang desitjat en el cas de que l’angle sigui superior a 180. Si l'angle és inferior a -180 graus li hem sumat 360 graus repetidament fins que ha quedat dins del rang desitjat.
 
-#### 3.2. Càlcul de les coordenades de l’enemic
+#### Càlcul de les coordenades del contrari
 
 Dins de la funció `calculateFurthestCorner`  (a la classe Detection.java).
 
@@ -115,7 +157,7 @@ $$
 enemyY= possicióRobotY +  distànciaEnemicY ×cos(radians(heading+bearing))
 $$
 
-#### 3.3. Càlcul de la distància de l’enemic a cada cantonada
+#### Càlcul de la distància del contrari a cada cantonada
 
 Dins de la funció `calculateFurthestCorner`  (a la classe Detection.java).
 
@@ -151,11 +193,11 @@ Dins de la funció `calculateFurthestCorner`  (a la classe Detection.java).
     Per fer aquest càlcul, però, hem fet servir la funció `Math.hypot` .
     
 
-#### 3.4. Càlcul de la distància i l’angle a la cantonada objectiu
+#### Càlcul de la distància i l’ angle a la cantonada objectiu
 
 Dins de la funció `run()`  (a la classe MoveToCorner.java).
 
-##### **3.4.1. Càlcul de la distància** 
+##### Càlcul de la distància
 
 ```java
 double dx = robot.targetX - robot.getX();
@@ -176,7 +218,7 @@ Així obtenim els components del vector de desplaçament des de la posició actu
 
 El vector desplaçament és (distànciaX,distànciaY), al codi `(dx,dy)`, i representa la diferència en les coordenades X i Y entre la posició actual del robot i la posició de l'objectiu.
 
-##### **3.4.2. Càlcul de l’angle**
+##### Càlcul de l’angle
 
 ```java
 double angleToTarget = Math.toDegrees(Math.atan2(dx, dy));
@@ -202,7 +244,7 @@ Depenent del quadrant en el qual es trobi el vector, s’ha de fer un dels segü
 
 La funció `Math.atan2(dx, dy)` té en compte els signes de `dx` i `dy`, per tant retorna un angle en el rang complet de −π a π, vol dir que cobreix tots els quadrants. Això evita la necessitat d'ajustos addicionals. Fem servir també `Math.toDegrees` per fer la conversió de radians a graus.
 
-#### 3.5. Càlcul i normalització de l’angle de gir
+#### Càlcul i normalització angle de gir
 
 Dins de la funció `run()`  (a la classe MoveToCorner.java).
 
@@ -218,7 +260,7 @@ $$
 
 Es fa servir la funció `normalizeBearing` (explicada al punt 3.1) per a ajustar un angle perquè estigui dins del rang de -180 a 180 graus.
 
-#### 3.6. Girar canó cap a l’enemic
+#### Girar canó cap al contrari
 
 Dins de la funció `onHitRobot()`  (a la classe MoveToCorner.java), també dins de la funció `aimAndFire()`  (a la classe Attack.java).
 
@@ -234,7 +276,7 @@ $$
 
 Després s’ha de fer servir la funció `normalizeBearing` (explicada al punt 3.1) per a ajustar un angle perquè estigui dins del rang de -180 a 180 graus quan fem girar el canó fent servir la funció `setTurnGunRight`.
 
-#### 3.7. Decisió de la direcció de gir basada en enemyBearing:
+#### Decisió de la direcció de gir basada en enemybearing
 
 Dins de la funció `onHitRobot()`  (a la classe MoveToCorner.java).
 
@@ -252,7 +294,7 @@ El motiu per el que escollim segons el valor de l’`enemyBearing`  es deu a que
 
 La decisió de gir segons l’`enemyBearing`  també es fa servir a la funció `onHitWall()` si el robot no es troba a una cantonada.
 
-#### 3.8. Càlcul de la potència del tret
+#### Càlcul de la potència del tret
 
 Dins de la funció `aimAndFire()`  (a la classe Attack.java).
 
