@@ -1,4 +1,3 @@
-
 package followtheleaderteam;
 
 import java.awt.Color;
@@ -14,6 +13,8 @@ public class FollowTheLeaderTeam extends TeamRobot {
   private static final Point2D.Double ORIGIN = new Point2D.Double(0, 0);
   private ArrayList<HierarchyMember> teamMembers = new ArrayList<>();
   private HierarchyMember leader;
+  private boolean iAmFirst = false;
+  private boolean allPositionsReceived = false;
   public HierarchyMember myRole;
   private State state; // Almacena el estado actual
 
@@ -22,14 +23,34 @@ public class FollowTheLeaderTeam extends TeamRobot {
     while (getTeammates() == null || getTeammates().length == 0) {
       execute();
     }
+    if (getName().equals("followtheleaderteam.FollowTheLeaderTeam* (1)")) iAmFirst = true;
 
-    reportPosition();
-    updateState();
-
+    if (iAmFirst) {
+      waitForAllPositions(); // Wait for all positions to be received
+      broadcastHierarchy(); // Broadcast the hierarchy to all team members
+    } else {
+      reportPosition();
+      while (teamMembers.size() < getTeammates().length) {
+        execute(); // Mantener el ciclo hasta recibir todas las posiciones
+      }
+    }
+    out.println("flag 1");
     // Comportamiento continuo
     while (true) {
+      out.println("While -> My role -> " + myRole);
       state.run();
     }
+  }
+
+  private void waitForAllPositions() {
+    HierarchyMember me = new HierarchyMember(getName(), new Point2D.Double(getX(), getY()));
+    updateTeamHierarchy(me);
+
+    out.println("Esperando todas las posiciones " + me.name);
+    while (!allPositionsReceived) {
+      execute(); // Keep executing until all positions are received
+    }
+    out.println("Posiciones obtenidas");
   }
 
   private void updateState() {
@@ -41,12 +62,29 @@ public class FollowTheLeaderTeam extends TeamRobot {
   }
 
   public void onMessageReceived(MessageEvent e) {
-    if (e.getMessage() instanceof HierarchyMember) {
-      HierarchyMember newMember = (HierarchyMember) e.getMessage();
-      updateTeamHierarchy(newMember);
+    if (iAmFirst && !allPositionsReceived) {
+      if (e.getMessage() instanceof HierarchyMember) {
+        HierarchyMember newMember = (HierarchyMember) e.getMessage();
+        updateTeamHierarchy(newMember);
+        updateState();
+      } else if (e.getMessage().equals("REVERSE_HIERARCHY")) {
+        reverseHierarchy(); // Invertir jerarquía cuando se reciba el mensaje
+      }
+    }
+    if (e.getMessage() instanceof HierarchyBroadcast) {
+      HierarchyBroadcast hierarchyBroadcast = (HierarchyBroadcast) e.getMessage();
+      updateTeamMembers(hierarchyBroadcast);
       updateState();
     } else if (e.getMessage().equals("REVERSE_HIERARCHY")) {
       reverseHierarchy(); // Invertir jerarquía cuando se reciba el mensaje
+    }
+  }
+
+  private void updateTeamMembers(HierarchyBroadcast hierarchyBroadcast) {
+    out.println("La lista es de -> " + hierarchyBroadcast.members.size());
+    teamMembers.clear(); // Clear the current team members list
+    for (HierarchyMember member : hierarchyBroadcast.members) {
+      updateTeamHierarchy(member); // Add new members from the broadcast
     }
   }
 
@@ -57,7 +95,6 @@ public class FollowTheLeaderTeam extends TeamRobot {
     } catch (IOException ex) {
       out.println("Error al enviar mensaje: " + ex.getMessage());
     }
-    updateTeamHierarchy(me);
   }
 
   private void updateTeamHierarchy(HierarchyMember member) {
@@ -71,6 +108,7 @@ public class FollowTheLeaderTeam extends TeamRobot {
         }
       }
       if (!exists) {
+        out.println("Add member -> " + member.name);
         teamMembers.add(member);
       }
     }
@@ -80,12 +118,23 @@ public class FollowTheLeaderTeam extends TeamRobot {
 
     // Asignar el líder
     leader = teamMembers.get(0);
+    out.println("Leader -> " + leader.name);
     for (int i = 0; i < teamMembers.size(); i++) {
       teamMembers.get(i).previous = (i == 0) ? null : teamMembers.get(i - 1);
       if (teamMembers.get(i).name.equals(getName())) {
         myRole = teamMembers.get(i);
+        out.println("My role -> " + myRole.name);
         updateState();
       }
+    }
+    if (teamMembers.size() == (getTeammates().length + 1)) allPositionsReceived = true;
+  }
+
+  private void broadcastHierarchy() {
+    try {
+      broadcastMessage(new HierarchyBroadcast(teamMembers));
+    } catch (IOException ex) {
+      out.println("Error sending hierarchy: " + ex.getMessage());
     }
   }
 
@@ -128,15 +177,12 @@ public class FollowTheLeaderTeam extends TeamRobot {
     while (angle < -180) angle += 360;
     return angle;
   }
+}
 
-  static class HierarchyMember implements java.io.Serializable {
-    String name;
-    Point2D.Double position;
-    HierarchyMember previous;
+class HierarchyBroadcast implements java.io.Serializable {
+  ArrayList<HierarchyMember> members; // List of team members in the hierarchy
 
-    HierarchyMember(String name, Point2D.Double position) {
-      this.name = name;
-      this.position = position;
-    }
+  HierarchyBroadcast(ArrayList<HierarchyMember> members) {
+    this.members = members;
   }
 }
