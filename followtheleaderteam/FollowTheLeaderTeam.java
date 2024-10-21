@@ -20,26 +20,26 @@ public class FollowTheLeaderTeam extends TeamRobot {
   private boolean iAmFirst = false;
   private boolean allPositionsReceived = false;
   public HierarchyMember myRole;
-  private State state; // Almacena el estado actual
+  private State state; // Emmagatzema l'estat actual
 
   public void run() {
-    // Esperar a que todos los miembros del equipo estén reportados
+    // Esperar que tots els membres de l'equip es reportin
     while (getTeammates() == null || getTeammates().length == 0) {
       execute();
     }
     if (getName().equals("followtheleaderteam.FollowTheLeaderTeam* (1)")) iAmFirst = true;
 
     if (iAmFirst) {
-      waitForAllPositions(); // Wait for all positions to be received
-      broadcastHierarchy(); // Broadcast the hierarchy to all team members
+      waitForAllPositions(); // Esperar a que s'hagin rebut totes les posicions
+      broadcastHierarchy(); // Enviar la jerarquia a tots els membres de l'equip
     } else {
       reportPosition();
       while (teamMembers.size() < getTeammates().length) {
-        execute(); // Mantener el ciclo hasta recibir todas las posiciones
+        execute(); // Mantenir el cicle fins que es rebin totes les posicions
       }
     }
     out.println("flag 1");
-    // Comportamiento continuo
+    // Comportament continu
     while (true) {
       out.println("While -> My role -> " + myRole);
       state.run();
@@ -50,11 +50,11 @@ public class FollowTheLeaderTeam extends TeamRobot {
     HierarchyMember me = new HierarchyMember(getName(), new Point2D.Double(getX(), getY()));
     updateTeamHierarchy(me);
 
-    out.println("Esperando todas las posiciones " + me.name);
+    out.println("Esperant totes les posicions " + me.name);
     while (!allPositionsReceived) {
-      execute(); // Keep executing until all positions are received
+      execute(); // Continuar executant fins que es rebin totes les posicions
     }
-    out.println("Posiciones obtenidas");
+    out.println("Posicions obtingudes");
   }
 
   private void updateState() {
@@ -72,7 +72,7 @@ public class FollowTheLeaderTeam extends TeamRobot {
         updateTeamHierarchy(newMember);
         updateState();
       } else if (e.getMessage().equals("REVERSE_HIERARCHY")) {
-        reverseHierarchy(); // Invertir jerarquía cuando se reciba el mensaje
+        reverseHierarchy(); // Invertir jerarquia quan es rebi el missatge
       }
     }
 
@@ -84,22 +84,22 @@ public class FollowTheLeaderTeam extends TeamRobot {
 
       double distanceToEnemy = enemyPosition.distance(getX(), getY());
 
-      // Calculate the angle to the enemy
+      // Calcular l'angle cap a l'enemic
       double dx = enemyPosition.getX() - getX();
       double dy = enemyPosition.getY() - getY();
       double angleToEnemy = Math.toDegrees(Math.atan2(dx, dy));
       double turnGun = normalizeBearing(angleToEnemy - getGunHeading());
 
-      // Turn the gun towards the enemy
+      // Girar la pistola cap a l'enemic
       setTurnGunRight(turnGun);
 
-      // Fire based on distance to the enemy
+      // Disparar en funció de la distància a l'enemic
       if (distanceToEnemy < 150) {
-        setFire(3); // High power if close
+        setFire(3); // Màxima potència si és a prop
       } else if (distanceToEnemy < 300) {
-        setFire(2); // Medium power if medium distance
+        setFire(2); // Potència mitjana si està a distància mitjana
       } else {
-        setFire(1); // Low power if far away
+        setFire(1); // Potència baixa si està lluny
       }
     }
     if (e.getMessage() instanceof HierarchyBroadcast) {
@@ -107,15 +107,15 @@ public class FollowTheLeaderTeam extends TeamRobot {
       updateTeamMembers(hierarchyBroadcast);
       updateState();
     } else if (e.getMessage().equals("REVERSE_HIERARCHY")) {
-      reverseHierarchy(); // Invertir jerarquía cuando se reciba el mensaje
+      reverseHierarchy(); // Invertir jerarquia quan es rebi el missatge
     }
   }
 
   private void updateTeamMembers(HierarchyBroadcast hierarchyBroadcast) {
-    out.println("La lista es de -> " + hierarchyBroadcast.members.size());
-    teamMembers.clear(); // Clear the current team members list
+    out.println("La llista és de -> " + hierarchyBroadcast.members.size());
+    teamMembers.clear(); // Netejar la llista actual de membres de l'equip
     for (HierarchyMember member : hierarchyBroadcast.members) {
-      updateTeamHierarchy(member); // Add new members from the broadcast
+      updateTeamHierarchy(member); // Afegir nous membres del broadcast
     }
   }
 
@@ -124,7 +124,7 @@ public class FollowTheLeaderTeam extends TeamRobot {
     try {
       broadcastMessage(me);
     } catch (IOException ex) {
-      out.println("Error al enviar mensaje: " + ex.getMessage());
+      out.println("Error en enviar el missatge: " + ex.getMessage());
     }
   }
 
@@ -139,22 +139,22 @@ public class FollowTheLeaderTeam extends TeamRobot {
         }
       }
       if (!exists) {
-        out.println("Add member -> " + member.name);
+        out.println("Afegir membre -> " + member.name);
         teamMembers.add(member);
       }
     }
 
-    // Ordenar los miembros por distancia al origen
+    // Ordenar els membres per distància a l'origen
     Collections.sort(teamMembers, Comparator.comparingDouble(m -> m.position.distance(ORIGIN)));
 
-    // Asignar el líder
+    // Assignar el líder
     leader = teamMembers.get(0);
-    out.println("Leader -> " + leader.name);
+    out.println("Líder -> " + leader.name);
     for (int i = 0; i < teamMembers.size(); i++) {
       teamMembers.get(i).previous = (i == 0) ? null : teamMembers.get(i - 1);
       if (teamMembers.get(i).name.equals(getName())) {
         myRole = teamMembers.get(i);
-        out.println("My role -> " + myRole.name);
+        out.println("El meu rol -> " + myRole.name);
         updateState();
       }
     }
@@ -165,33 +165,33 @@ public class FollowTheLeaderTeam extends TeamRobot {
     try {
       broadcastMessage(new HierarchyBroadcast(teamMembers));
     } catch (IOException ex) {
-      out.println("Error sending hierarchy: " + ex.getMessage());
+      out.println("Error en enviar la jerarquia: " + ex.getMessage());
     }
   }
 
   public void reverseHierarchy() {
-    // Invertir la jerarquía
-    out.println("Estado de teamMembers antes de la inversión:");
+    // Invertir la jerarquia
+    out.println("Estat de teamMembers abans de la inversió:");
     for (HierarchyMember member : teamMembers) {
-      out.println("Miembro: " + member.name + ", Posición: " + member.position);
+      out.println("Membre: " + member.name + ", Posició: " + member.position);
     }
     Collections.reverse(teamMembers);
 
-    // Asignar el nuevo líder
+    // Assignar el nou líder
     leader = teamMembers.get(0);
     for (int i = 0; i < teamMembers.size(); i++) {
       teamMembers.get(i).previous = (i == 0) ? null : teamMembers.get(i - 1);
       if (teamMembers.get(i).name.equals(getName())) {
         myRole = teamMembers.get(i);
-        updateState(); // Actualizar el estado después de invertir la jerarquía
+        updateState(); // Actualitzar l'estat després d'invertir la jerarquia
       }
     }
 
-    out.println("Estado de teamMembers después de la inversión:");
+    out.println("Estat de teamMembers després de la inversió:");
     for (HierarchyMember member : teamMembers) {
-      out.println("Miembro: " + member.name + ", Posición: " + member.position);
+      out.println("Membre: " + member.name + ", Posició: " + member.position);
     }
-    out.println("Jerarquía invertida. Nuevo líder: " + leader.name);
+    out.println("Jerarquia invertida. Nou líder: " + leader.name);
   }
 
   public void onRobotDeath(RobotDeathEvent e) {
@@ -221,26 +221,26 @@ public class FollowTheLeaderTeam extends TeamRobot {
     state.onScannedRobot(e);
   }
 
-  // delega el maneig de l'esdeveniment onHitRobot a l'estat actual
+  // delega la gestió de l'esdeveniment onHitRobot a l'estat actual
   @Override
   public void onHitRobot(HitRobotEvent e) {
     state.onHitRobot(e);
   }
 
-  // delega el maneig de l'esdeveniment onHitWall a l'estat actual
+  // delega la gestió de l'esdeveniment onHitWall a l'estat actual
   @Override
   public void onHitWall(HitWallEvent e) {
     state.onHitWall(e);
   }
 
   public boolean isTeammate(String robotName) {
-    // Example logic to check if the robotName is in your team
-    return robotName.startsWith("followtheleaderteam"); // Replace with actual logic
+    // Lògica per verificar si el robotName és del teu equip
+    return robotName.startsWith("followtheleaderteam"); // Substituir amb la lògica actual
   }
 }
 
 class HierarchyBroadcast implements java.io.Serializable {
-  ArrayList<HierarchyMember> members; // List of team members in the hierarchy
+  ArrayList<HierarchyMember> members; // Llista de membres de l'equip en la jerarquia
 
   HierarchyBroadcast(ArrayList<HierarchyMember> members) {
     this.members = members;
