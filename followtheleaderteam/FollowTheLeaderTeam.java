@@ -7,11 +7,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Random;
 import robocode.*;
 
 public class FollowTheLeaderTeam extends TeamRobot {
   private static final Point2D.Double ORIGIN = new Point2D.Double(0, 0);
-  private ArrayList<HierarchyMember> teamMembers = new ArrayList<>();
+  ArrayList<HierarchyMember> teamMembers = new ArrayList<>();
+  Random random = new Random();
+  Point2D.Double target;
+  Point2D.Double enemyPosition;
   private HierarchyMember leader;
   private boolean iAmFirst = false;
   private boolean allPositionsReceived = false;
@@ -71,6 +75,33 @@ public class FollowTheLeaderTeam extends TeamRobot {
         reverseHierarchy(); // Invertir jerarquía cuando se reciba el mensaje
       }
     }
+
+    if (e.getMessage() instanceof HierarchyMember) {
+      HierarchyMember member = (HierarchyMember) e.getMessage();
+      target = member.position;
+    } else if (e.getMessage() instanceof Point2D.Double) {
+      enemyPosition = (Point2D.Double) e.getMessage();
+
+      double distanceToEnemy = enemyPosition.distance(getX(), getY());
+
+      // Calculate the angle to the enemy
+      double dx = enemyPosition.getX() - getX();
+      double dy = enemyPosition.getY() - getY();
+      double angleToEnemy = Math.toDegrees(Math.atan2(dx, dy));
+      double turnGun = normalizeBearing(angleToEnemy - getGunHeading());
+
+      // Turn the gun towards the enemy
+      setTurnGunRight(turnGun);
+
+      // Fire based on distance to the enemy
+      if (distanceToEnemy < 150) {
+        setFire(3); // High power if close
+      } else if (distanceToEnemy < 300) {
+        setFire(2); // Medium power if medium distance
+      } else {
+        setFire(1); // Low power if far away
+      }
+    }
     if (e.getMessage() instanceof HierarchyBroadcast) {
       HierarchyBroadcast hierarchyBroadcast = (HierarchyBroadcast) e.getMessage();
       updateTeamMembers(hierarchyBroadcast);
@@ -88,7 +119,7 @@ public class FollowTheLeaderTeam extends TeamRobot {
     }
   }
 
-  private void reportPosition() {
+  void reportPosition() {
     HierarchyMember me = new HierarchyMember(getName(), new Point2D.Double(getX(), getY()));
     try {
       broadcastMessage(me);
@@ -140,6 +171,10 @@ public class FollowTheLeaderTeam extends TeamRobot {
 
   public void reverseHierarchy() {
     // Invertir la jerarquía
+    out.println("Estado de teamMembers antes de la inversión:");
+    for (HierarchyMember member : teamMembers) {
+      out.println("Miembro: " + member.name + ", Posición: " + member.position);
+    }
     Collections.reverse(teamMembers);
 
     // Asignar el nuevo líder
@@ -152,12 +187,15 @@ public class FollowTheLeaderTeam extends TeamRobot {
       }
     }
 
+    out.println("Estado de teamMembers después de la inversión:");
+    for (HierarchyMember member : teamMembers) {
+      out.println("Miembro: " + member.name + ", Posición: " + member.position);
+    }
     out.println("Jerarquía invertida. Nuevo líder: " + leader.name);
   }
 
   public void onRobotDeath(RobotDeathEvent e) {
     teamMembers.removeIf(member -> member.name.equals(e.getName()));
-    updateTeamHierarchy(null);
     if (teamMembers.size() > 0) {
       leader = teamMembers.get(0);
       updateState();
@@ -176,6 +214,28 @@ public class FollowTheLeaderTeam extends TeamRobot {
     while (angle > 180) angle -= 360;
     while (angle < -180) angle += 360;
     return angle;
+  }
+
+  @Override
+  public void onScannedRobot(ScannedRobotEvent e) {
+    state.onScannedRobot(e);
+  }
+
+  // delega el maneig de l'esdeveniment onHitRobot a l'estat actual
+  @Override
+  public void onHitRobot(HitRobotEvent e) {
+    state.onHitRobot(e);
+  }
+
+  // delega el maneig de l'esdeveniment onHitWall a l'estat actual
+  @Override
+  public void onHitWall(HitWallEvent e) {
+    state.onHitWall(e);
+  }
+
+  public boolean isTeammate(String robotName) {
+    // Example logic to check if the robotName is in your team
+    return robotName.startsWith("followtheleaderteam"); // Replace with actual logic
   }
 }
 
