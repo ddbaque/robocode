@@ -36,10 +36,10 @@ public class MoveToCorner implements State {
     // Gira el robot per posicionar-se de cara a la cantonada objectiu
     robot.setTurnRight(turnAngle);
 
-    // Mueve el robot en línea recta hacia la esquina objetivo
+    // Mou el robot en línia recta cap a la cantonada objectiu
     robot.setAhead(Math.hypot(dx, dy));
 
-    // Alinear el cañón y el radar al final del movimiento con el "heading" del tanque
+    // Alinear el canó i el radar al final del moviment amb el  "heading" del tanc
     alignGunAndRadarWithTank();
 
     // Si el robot arriba a la cantonada objectiu canvia a l'estat 2: Attack
@@ -47,20 +47,20 @@ public class MoveToCorner implements State {
       robot.setState(new Attack(robot));
     }
 
-    robot.execute(); // Ejecutar las órdenes
+    robot.execute(); // Executar les ordres
   }
 
-  // Método para alinear el cañón y el radar con el "heading" del tanque
+  // Mètode per alinear el caó i el radar amb el "heading" del tanc
   private void alignGunAndRadarWithTank() {
-    // Alinear el cañón con el heading del tanque
+    // Alinear el canó amb el heading del tanc
     double gunTurnAngle = robot.normalizeBearing(robot.getHeading() - robot.getGunHeading());
     robot.setTurnGunRight(gunTurnAngle);
 
-    // Alinear el radar con el cañón (que estará alineado con el tanque)
+    // Alinear el radar amb el canó (que estarà alineat amb el tanc)
     double radarTurnAngle = robot.normalizeBearing(robot.getHeading() - robot.getRadarHeading());
     robot.setTurnRadarRight(radarTurnAngle);
     
-    robot.execute(); // Ejecutar las órdenes de alineación
+    robot.execute(); // Executar les ordres d'alineació
   }
 
   @Override
@@ -113,7 +113,7 @@ public class MoveToCorner implements State {
     // Avançar una mica dessprés d'esquivar
     robot.ahead(100); // Es mou cap endavant per a separar-se de l'enemic
 
-    // Alinear el cañón y el radar después de moverse
+    // Alinear el canó i el radar després de moures
     alignGunAndRadarWithTank();
   }
 
@@ -172,7 +172,7 @@ public class MoveToCorner implements State {
     if (isSurrounded()) {
       robot.turnRight(180); // Girar 180 graus per a escapar
       robot.setAhead(100); // Avançar cap al davant per a sortir del lloc
-      robot.execute(); // Ejecutar les comandes
+      robot.execute(); // Executar les comandes
     }
   }
 
@@ -183,7 +183,7 @@ public class MoveToCorner implements State {
 
   @Override
   public void onScannedRobot(ScannedRobotEvent e) {
-    robot.out.println("robot escaneado" );
+    robot.out.println("robot escanejat" );
     // Si el robot detectado está a menos de 50 unidades de distancia, esquiva
     if (e.getDistance() < 100) {
       robot.back(10); // Retroceder una mica
@@ -194,14 +194,14 @@ public class MoveToCorner implements State {
       } else {
         robot.setTurnRight(angleOffset + random.nextInt(45)); // Gira a la dreta
       }
-      robot.ahead(100); // Avanza para alejarse
-      robot.execute(); // Ejecutar las órdenes
+      robot.ahead(100); // Avança per allunyar-se
+      robot.execute(); // Executar les ordres
 
-      // Alinear el cañón y el radar después de esquivar
+      // Alinear el canó i el radar després d'esquivar
       alignGunAndRadarWithTank();
     } 
 
-    // Marcar que el escaneo ya ha sido completado después del primer enemigo escaneado
+    // Marcar que l'escanig ja s'ha completat després del primer enemic escanejat
     scanCompleted = true;
   }
 }
